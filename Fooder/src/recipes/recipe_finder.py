@@ -15,12 +15,80 @@ class RecipeFinder:
         if not api_key:
             raise ValueError("Spoonacular API key is required")
 
-    def find_recipes(self, ingredients: List[str], limit: int = 5) -> List[Dict[str, Any]]:
+    def find_recipes(self, items: List[str], limit: int = 5) -> List[Dict[str, Any]]:
         """
-        Find recipes based on detected food items
+        Find recipes based on detected food items, handling both prepared foods and ingredients differently
         
         Args:
-            ingredients (List[str]): List of detected food items
+            items (List[str]): List of detected food items
+            limit (int): Maximum number of recipes to return
+            
+        Returns:
+            List[Dict[str, Any]]: List of recipes with their details
+        """
+        from vision.food_detector import FoodDetector
+        
+        # Separate items into prepared foods and ingredients
+        prepared_foods = [item for item in items if item in FoodDetector.PREPARED_FOODS]
+        ingredients = [item for item in items if item not in FoodDetector.PREPARED_FOODS]
+        
+        recipes = []
+        
+        # Handle prepared foods
+        if prepared_foods:
+            recipes.extend(self._search_recipes_by_query(prepared_foods, limit))
+            
+        # Handle ingredients
+        if ingredients:
+            recipes.extend(self._find_recipes_by_ingredients(ingredients, limit))
+            
+        return recipes[:limit]  # Ensure we don't exceed the limit
+        
+    def _search_recipes_by_query(self, foods: List[str], limit: int) -> List[Dict[str, Any]]:
+        """
+        Search recipes for prepared foods using the complexSearch endpoint
+        
+        Args:
+            foods (List[str]): List of prepared food items
+            limit (int): Maximum number of recipes to return
+            
+        Returns:
+            List[Dict[str, Any]]: List of recipes matching the query
+        """
+        # Join food items with OR for broader search
+        query = ' OR '.join(f'"{food}"' for food in foods)
+        
+        # API endpoint for complex search
+        endpoint = f"{self.base_url}/complexSearch"
+        
+        # Query parameters
+        params = {
+            'apiKey': self.api_key,
+            'query': query,
+            'number': limit,
+            'addRecipeInformation': True,  # Include full recipe details
+            'fillIngredients': True,  # Include ingredient information
+            'instructionsRequired': True  # Only return recipes with instructions
+        }
+        
+        try:
+            # Make API request
+            response = requests.get(endpoint, params=params)
+            response.raise_for_status()
+            results = response.json()
+            
+            return results.get('results', [])
+            
+        except requests.exceptions.RequestException as e:
+            print(f"Error searching recipes: {str(e)}")
+            return []
+            
+    def _find_recipes_by_ingredients(self, ingredients: List[str], limit: int) -> List[Dict[str, Any]]:
+        """
+        Find recipes based on ingredients using the findByIngredients endpoint
+        
+        Args:
+            ingredients (List[str]): List of ingredients
             limit (int): Maximum number of recipes to return
             
         Returns:

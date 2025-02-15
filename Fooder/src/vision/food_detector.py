@@ -27,11 +27,38 @@ class FoodDetector:
         except Exception as e:
             raise RuntimeError(f"Failed to initialize food detection system: {str(e)}")
 
+    # Define prepared foods as a class attribute
+    PREPARED_FOODS = {
+        'sandwich', 'hot dog', 'pizza', 'burger', 'sushi', 'pasta',
+        'donut', 'cake', 'ice cream', 'cookie', 'pastry'
+    }
+
     def _get_food_classes(self):
         """Return a set of COCO food-related class names"""
         return {
-            'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza',
-            'donut', 'cake', 'bowl', 'dining table', 'food', 'fruit', 'vegetable'
+            # Fruits
+            'banana', 'apple', 'orange', 'pear', 'grapefruit', 'lemon', 'strawberry', 'grape',
+            
+            # Vegetables
+            'broccoli', 'carrot', 'cucumber', 'lettuce', 'tomato', 'potato', 'corn',
+            
+            # Prepared Foods
+            *self.PREPARED_FOODS,
+            
+            # Staples
+            'rice', 'bread',
+            
+            # Beverages
+            'coffee', 'wine', 'juice',
+            
+            # Proteins
+            'chicken', 'beef', 'fish', 'eggs',
+            
+            # Condiments
+            'ketchup', 'mustard', 'sauce',
+            
+            # Generic Categories
+            'food', 'fruit', 'vegetable'
         }
 
     def detect(self, image_path: str) -> list:
