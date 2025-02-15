@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 
 class FoodDetector:
     def __init__(self):
-        """Initialize the YOLOv8n model for food detection"""
+        """Initialize the YOLOv11n model for food detection"""
         try:
             # Initialize YOLOv8n model
-            self.model = YOLO('yolov8n.pt')
+            self.model = YOLO('yolo11n.pt')
             
             # Cache the class names for food items only
             self.food_classes = {

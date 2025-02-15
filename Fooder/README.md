@@ -4,13 +4,14 @@ An AI-powered application that recognizes food items in images and suggests rele
 
 ## Features
 
-- Food item detection using YOLOv5
+- Food item detection using YOLOv11n (latest version)
+- Web interface via Flask server
 - Recipe recommendations from Spoonacular API
 - Support for common food items like fruits, vegetables, and prepared dishes
 
 ## Prerequisites
 
-- Python 3.7+
+- Python 3.8+
 - pip (Python package installer)
 - Spoonacular API key
 
@@ -51,24 +52,42 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-2. Run the application:
+2. Run the Flask server:
 ```bash
 python src/main.py
 ```
 
-3. When prompted, enter the path to your food image. The application will:
-   - Detect food items in the image
-   - Find relevant recipes
-   - Display recipe details including title, cooking time, and source URL
+3. Open your web browser and navigate to:
+```
+http://localhost:5000
+```
 
-4. Enter 'q' to quit the application.
+4. Use the web interface to:
+   - Upload food images (max size: 10MB)
+   - View detected food items
+   - Get recipe recommendations based on detected items
+   - See processing time and detection confidence scores
 
 ## Supported Food Items
 
 The current version can detect:
-- Fruits: apple, banana, orange
-- Vegetables: broccoli, carrot
-- Prepared foods: sandwich, hot dog, pizza, donut, cake
+
+### Fruits
+- apple, banana, orange, pear, grapefruit, lemon, strawberry, grape
+
+### Vegetables
+- broccoli, carrot, cucumber, lettuce, tomato, potato, corn
+
+### Prepared Foods
+- sandwich, hot dog, pizza, burger, sushi, pasta
+- donut, cake, ice cream, cookie, pastry
+
+### Other Categories
+- Staples: rice, bread
+- Beverages: coffee, wine, juice
+- Proteins: chicken, beef, fish, eggs
+- Condiments: ketchup, mustard, sauce
+- Generic: food, fruit, vegetable
 
 ## API Rate Limits
 
