@@ -1,4 +1,4 @@
-# Fooder - Food Recognition and Recipe Finder
+# Fooder - AI Food Recognition and Recipe Finder
 
 An AI-powered application that recognizes food items in images and suggests relevant recipes.
 
