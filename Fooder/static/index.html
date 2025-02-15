@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fooder - Recipe Finder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .processing-time {
+            text-align: center;
+            color: #666;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .upload-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .preview-image {
+            max-width: 400px;
+            max-height: 400px;
+            margin: 20px auto;
+            display: none;
+        }
+        .detected-items {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .recipes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+        .recipe-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .recipe-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .recipe-card h3 {
+            margin: 10px 0;
+        }
+        .recipe-details {
+            display: flex;
+            gap: 15px;
+            margin: 10px 0;
+            color: #666;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #2196F3;
+        }
+        .loading::after {
+            content: '';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80% { content: '...'; }
+            100% { content: ''; }
+        }
+        .error {
+            color: #e53935;
+            text-align: center;
+            padding: 15px;
+            display: none;
+            background-color: #ffebee;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        a.recipe-link {
+            display: inline-block;
+            background-color: #2196F3;
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        a.recipe-link:hover {
+            background-color: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Fooder</h1>
+        <p>Upload a food image to discover recipes</p>
+    </div>
+
+    <div class="upload-section">
+        <input type="file" id="imageInput" accept="image/*" style="display: none;">
+        <button onclick="document.getElementById('imageInput').click()">Choose Image</button>
+        <img id="preview" class="preview-image">
+    </div>
+
+    <div id="loading" class="loading">
+        Processing image
+    </div>
+    <div id="processingTime" class="processing-time" style="display: none;"></div>
+
+    <div id="error" class="error"></div>
+
+    <div id="detectedItems" class="detected-items" style="display: none;">
+        <h2>Detected Items</h2>
+        <div id="itemsList"></div>
+    </div>
+
+    <div id="recipes" class="recipes-grid"></div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api/detect-and-find-recipes';
+        const imageInput = document.getElementById('imageInput');
+        const preview = document.getElementById('preview');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const detectedItems = document.getElementById('detectedItems');
+        const itemsList = document.getElementById('itemsList');
+        const recipesGrid = document.getElementById('recipes');
+
+        imageInput.addEventListener('change', handleImageUpload);
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                
+                // Process the image
+                processImage(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        const API_TIMEOUT = 30000; // 30 seconds timeout
+
+        async function processImage(base64Image) {
+            // Reset UI
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            detectedItems.style.display = 'none';
+            recipesGrid.innerHTML = '';
+            document.getElementById('processingTime').style.display = 'none';
+
+            // Create AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ image: base64Image }),
+                    signal: controller.signal
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Show processing time if available
+                if (data.processing_time !== undefined) {
+                    const processingTimeDiv = document.getElementById('processingTime');
+                    processingTimeDiv.textContent = `Processing time: ${data.processing_time} seconds`;
+                    processingTimeDiv.style.display = 'block';
+                }
+
+                // Display detected items
+                if (data.detected_items && data.detected_items.length > 0) {
+                    itemsList.innerHTML = data.detected_items
+                        .map(item => `<p>• ${item}</p>`)
+                        .join('');
+                    detectedItems.style.display = 'block';
+                }
+
+                // Display recipes
+                if (data.recipes && data.recipes.length > 0) {
+                    recipesGrid.innerHTML = data.recipes
+                        .map(recipe => `
+                            <div class="recipe-card">
+                                <img src="${recipe.image || 'placeholder.jpg'}" alt="${recipe.title}">
+                                <h3>${recipe.title}</h3>
+                                <div class="recipe-details">
+                                    <span>🕒 ${recipe.readyInMinutes} mins</span>
+                                    ${recipe.servings ? `<span>👥 Serves ${recipe.servings}</span>` : ''}
+                                </div>
+                                <a href="${recipe.sourceUrl}" target="_blank" class="recipe-link">View Recipe</a>
+                            </div>
+                        `)
+                        .join('');
+                }
+            } catch (err) {
+                let errorMessage = err.message;
+                if (err.name === 'AbortError') {
+                    errorMessage = 'Request timed out. Please try again with a smaller image or better connection.';
+                }
+                error.textContent = `Error: ${errorMessage}`;
+                error.style.display = 'block';
+            } finally {
+                clearTimeout(timeoutId);
+                loading.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
